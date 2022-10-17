@@ -24,6 +24,7 @@ router.post('/createnote' , fetchUser,[body('title').exists(),body('description'
         return res.status(400).json({errorMsg:"The values cannot be empty"})
     }
     const {title,description,tag} = req.body;
+    // console.log(req.body);
     try {
         const note = new Notes({
             title,description,tag,user:req.user.id
@@ -75,8 +76,6 @@ router.put('/editnote/:id' , fetchUser,[body('title').exists(),body('description
 router.delete('/deletenote/:id' , fetchUser, async (req,res) => {
 
     try {
-     const {title,description,tag} = req.body
-
      // Find the note to be deleted.
 
      let note = await Notes.findById(req.params.id)
