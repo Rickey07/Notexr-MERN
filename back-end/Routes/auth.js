@@ -14,16 +14,17 @@ router.post('/newregistration' ,[
     body('name').isLength({min:5}),
     body('password').isLength({min:6})
 ], async (req ,res)  => {
+    let success = false;
     try {
         // Errors validation in route if any then return those.
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({errors:errors.array()})
+            return res.status(400).json({errors:errors.array(),msg:"Please check all the details",success})
         }
         // Check if the user already exists with email.
         let user = await User.findOne({email:req.body.email})
         if (user) {
-            return res.status(400).json({error:`user with this ${req.body.email} Already exists`})
+            return res.status(400).json({msg:`user with this ${req.body.email} Already exists`,success})
         } else {
             const salt = await bcrypt.genSalt(10);
             let securePassword = await bcrypt.hash(req.body.password,salt);
@@ -36,7 +37,8 @@ router.post('/newregistration' ,[
             }
 
             const authToken = jsonWebToken.sign(data,JWT_SECRET)
-            res.status(200).json({authToken,msg:"User Created Successfully"});
+            success = true;
+            res.status(200).json({authToken,msg:"Account Created Successfully",success});
         }
 
     } catch (error) {
@@ -47,7 +49,7 @@ router.post('/newregistration' ,[
 // Authenication a user using '/api/auth/login'No Login required 
 
 router.post('/login' ,[body('email','Enter a valid email').isEmail(),body('password','password cannot be blank').exists()], async (req,res) => {
-
+        let success = false;
     // If there are any errors return the array.
 
     const errors = validationResult(req);
@@ -61,12 +63,12 @@ router.post('/login' ,[body('email','Enter a valid email').isEmail(),body('passw
     try {
         let user = await User.findOne({email})
         if(!user) {
-            return res.status(400).json({errorMsg:"Please try to login with correct credentials"})
+            return res.status(400).json({success,msg:"Please try to login with correct credentials"})
         }    
 
         const comparePassword = await bcrypt.compare(password,user.password);
         if(!comparePassword) {
-            return res.status(400).json({errorMsg:"Please try to login with correct credentials"})
+            return res.status(400).json({success,msg:"Please try to login with correct credentials"})
         }
 
         const payload = {
@@ -75,7 +77,8 @@ router.post('/login' ,[body('email','Enter a valid email').isEmail(),body('passw
             }
         }
         const authToken = jsonWebToken.sign(payload,JWT_SECRET);
-        res.json({authToken});
+        success = true;
+        res.json({success,authToken});
     } catch (error) {
         console.log(error);
         res.status(500).json({errorMsg:"Unknown Internal Server Error!"})
@@ -85,12 +88,12 @@ router.post('/login' ,[body('email','Enter a valid email').isEmail(),body('passw
 
 // Route for getting the loggedIn User Details.
 router.post('/getuser', fetchUser ,  async (req,res) => {
+    let success = false;
     try {
         let userId = req.user.id;
-        const user = await User.findById(userId).select("-password")
-        return res.status(200).json({userDetails:user})
+        const user = await User.findById(userId).select("-password");
+        return res.status(200).json({userDetails:user});
     } catch (error) {
-        console.log(error.message);
         res.status(500).json({errorMsg:"Internal Server Error Occured"})
     }
 })
